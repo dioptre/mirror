@@ -195,6 +195,7 @@ class GodotCommunicator:
     def _setup_handlers(self):
         """Setup message handlers"""
         self.server.register_message_handler('ping', self._handle_ping)
+        self.server.register_message_handler('client_info', self._handle_client_info)
         self.server.register_message_handler('get_characters', self._handle_get_characters)
         self.server.register_message_handler('get_poses', self._handle_get_poses)
     
@@ -202,6 +203,23 @@ class GodotCommunicator:
         """Handle ping message"""
         return {
             'type': 'pong',
+            'timestamp': datetime.now().isoformat()
+        }
+    
+    async def _handle_client_info(self, message: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle client info message"""
+        client_data = message.get('data', {})
+        client_type = client_data.get('client_type', 'unknown')
+        
+        logger.info(f"Client connected: {client_type} v{client_data.get('version', 'unknown')}")
+        
+        return {
+            'type': 'client_info_ack',
+            'data': {
+                'server_type': 'avatar_mirror',
+                'version': '1.0.0',
+                'capabilities': ['face_detection', 'pose_estimation', '3d_reconstruction', 'face_swapping']
+            },
             'timestamp': datetime.now().isoformat()
         }
     

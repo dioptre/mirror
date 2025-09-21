@@ -117,11 +117,25 @@ func _handle_message(message: Dictionary):
 		"welcome":
 			print("👋 %s" % message.get("message", "Welcome"))
 		
+		"client_info_ack":
+			print("🤝 Server acknowledged client info")
+			var server_data = message.get("data", {})
+			var capabilities = server_data.get("capabilities", [])
+			print("   Server capabilities: " + str(capabilities))
+		
 		"new_character":
 			_handle_new_character(message.get("data", {}))
 		
 		"pose_update":
 			_handle_pose_update(message.get("data", {}))
+		
+		"character_list":
+			var characters = message.get("characters", [])
+			print("📋 Character list received: %d characters" % characters.size())
+		
+		"current_poses":
+			var poses = message.get("poses", {})
+			print("🤸 Current poses received for %d people" % poses.size())
 		
 		"error":
 			print("❌ Server error: %s" % message.get("message", "Unknown error"))
