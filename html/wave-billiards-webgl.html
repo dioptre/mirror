@@ -1,0 +1,1568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coupled Oscillator Wave Billiards - WebGL</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #00ff00;
+            overflow: hidden;
+        }
+        .controls {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.9);
+            padding: 15px;
+            border: 1px solid #00ff00;
+            border-radius: 5px;
+            z-index: 1000;
+            max-height: 90vh;
+            overflow-y: auto;
+            width: 280px;
+        }
+        .control-group {
+            margin-bottom: 12px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 8px;
+        }
+        .section-title {
+            color: #00ffff;
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+        label {
+            display: block;
+            margin-bottom: 3px;
+            font-size: 10px;
+            color: #888;
+        }
+        input, select {
+            width: 100%;
+            margin-bottom: 4px;
+            background: #111;
+            color: #00ff00;
+            border: 1px solid #333;
+            padding: 2px;
+            font-size: 10px;
+        }
+        button {
+            padding: 4px 8px;
+            margin: 2px;
+            background: #001100;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            border-radius: 2px;
+            cursor: pointer;
+            font-size: 10px;
+        }
+        button:hover {
+            background: #003300;
+        }
+        .value-display {
+            color: #00ffff;
+            font-weight: bold;
+        }
+        #fileInput {
+            margin-bottom: 8px;
+        }
+        .oscillator-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+            margin-top: 5px;
+        }
+        .osc-control {
+            font-size: 9px;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <div class="control-group">
+            <div class="section-title">Image Input</div>
+            <input type="file" id="fileInput" accept="image/*">
+            <label>Detection Threshold: <span id="threshValue" class="value-display">128</span></label>
+            <input type="range" id="threshold" min="50" max="200" step="5" value="128">
+        </div>
+        
+        <div class="control-group">
+            <div class="section-title">Wave System</div>
+            <label>Wave Type:</label>
+            <select id="waveType">
+                <option value="coupled">Coupled Oscillators</option>
+                <option value="resonant">Resonant Modes</option>
+                <option value="interference">Interference Pattern</option>
+                <option value="quantum">Quantum Probability</option>
+                <option value="nonlinear">Nonlinear Coupling</option>
+            </select>
+            
+            <label>Billiard Shape:</label>
+            <select id="billiardShape">
+                <option value="none">No Boundary</option>
+                <option value="circle">Circle</option>
+                <option value="ellipse">Ellipse</option>
+                <option value="square">Square</option>
+                <option value="triangle">Triangle</option>
+                <option value="stadium">Stadium</option>
+                <option value="sinai">Sinai Billiard</option>
+            </select>
+        </div>
+        
+        <div class="control-group">
+            <div class="section-title">Oscillator Network</div>
+            <label>Coupling Strength: <span id="couplingValue" class="value-display">0.1</span></label>
+            <input type="range" id="coupling" min="0.0" max="1.0" step="0.01" value="0.1">
+            
+            <label>Network Topology:</label>
+            <select id="topology">
+                <option value="nearest">Nearest Neighbor</option>
+                <option value="global">All-to-All</option>
+                <option value="random">Random Network</option>
+                <option value="lattice">2D Lattice</option>
+                <option value="smallworld">Small World</option>
+            </select>
+            
+            <label>Oscillator Count: <span id="oscCountValue" class="value-display">16</span></label>
+            <input type="range" id="oscCount" min="4" max="64" step="4" value="16">
+        </div>
+        
+        <div class="control-group">
+            <div class="section-title">Resonant Parameters</div>
+            <label>Base Frequency: <span id="baseFreqValue" class="value-display">0.1</span></label>
+            <input type="range" id="baseFreq" min="0.01" max="0.5" step="0.01" value="0.1">
+            
+            <label>Frequency Spread: <span id="freqSpreadValue" class="value-display">0.05</span></label>
+            <input type="range" id="freqSpread" min="0.0" max="0.2" step="0.01" value="0.05">
+            
+            <label>Resonance Q: <span id="qFactorValue" class="value-display">10</span></label>
+            <input type="range" id="qFactor" min="1" max="50" step="1" value="10">
+            
+            <label>Image Coupling: <span id="imageCouplingValue" class="value-display">0.3</span></label>
+            <input type="range" id="imageCoupling" min="0.0" max="1.0" step="0.01" value="0.3">
+        </div>
+        
+        <div class="control-group">
+            <div class="section-title">Wave Physics</div>
+            <label>Wave Speed: <span id="speedValue" class="value-display">1.0</span></label>
+            <input type="range" id="waveSpeed" min="0.1" max="5.0" step="0.1" value="1.0">
+            
+            <label>Damping: <span id="dampValue" class="value-display">0.995</span></label>
+            <input type="range" id="damping" min="0.90" max="1.0" step="0.001" value="0.995">
+            
+            <label>Nonlinearity: <span id="nonlinearValue" class="value-display">0.0</span></label>
+            <input type="range" id="nonlinear" min="0.0" max="0.5" step="0.01" value="0.0">
+        </div>
+        
+        <div class="control-group">
+            <div class="section-title">Rendering</div>
+            <label>Render Quality:</label>
+            <select id="quality">
+                <option value="high">High (1x1)</option>
+                <option value="medium" selected>Medium (2x2)</option>
+                <option value="low">Low (4x4)</option>
+                <option value="ultra">Ultra (0.5x0.5)</option>
+            </select>
+            
+            <label>Color Mode:</label>
+            <select id="colorMode">
+                <option value="amplitude">Amplitude</option>
+                <option value="phase">Phase</option>
+                <option value="frequency">Frequency</option>
+                <option value="energy">Energy Density</option>
+            </select>
+        </div>
+        
+        <div class="control-group">
+            <div class="section-title">Particle Tracers</div>
+            <label>Tracer Count: <span id="tracerCountValue" class="value-display">50</span></label>
+            <input type="range" id="tracerCountSlider" min="10" max="200" step="10" value="50">
+            
+            <label>Tracer Speed: <span id="tracerSpeedValue" class="value-display">1.0</span></label>
+            <input type="range" id="tracerSpeedSlider" min="0.1" max="3.0" step="0.1" value="1.0">
+            
+            <label>Lifetime (frames): <span id="tracerLifetimeValue" class="value-display">300</span></label>
+            <input type="range" id="tracerLifetimeSlider" min="100" max="1000" step="50" value="300">
+        </div>
+        
+        <div class="control-group">
+            <div class="section-title">Control</div>
+            <button onclick="resetSystem()">Reset System</button>
+            <button onclick="pauseToggle()">Pause/Resume</button>
+            <button onclick="showObjects = !showObjects">Toggle Objects</button>
+            <button onclick="showTracers = !showTracers">Toggle Tracers</button>
+            <button onclick="saveFrame()">Save Frame</button>
+        </div>
+        
+        <div class="control-group">
+            <div class="section-title">System Info</div>
+            <div id="systemInfo" style="font-size: 9px; color: #666;">
+                FPS: <span id="fpsDisplay">--</span><br>
+                Oscillators: <span id="oscDisplay">--</span><br>
+                Resonant Modes: <span id="modesDisplay">--</span><br>
+                Coupling Energy: <span id="energyDisplay">--</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let img, imgTexture;
+        let oscillators = [];
+        let resonantModes = [];
+        let obstacles = [];
+        let billiardBoundary = null;
+        let tracers = [];
+        let showObjects = true;
+        let showTracers = true;
+        let isPaused = false;
+        let time = 0;
+        let frameCounter = 0;
+        let lastFPSUpdate = 0;
+        
+        // Shaders
+        let waveShader, displayShader;
+        let waveBuffer, displayBuffer;
+        
+        // System parameters
+        let waveSpeed = 1.0;
+        let baseFreq = 0.1;
+        let freqSpread = 0.05;
+        let coupling = 0.1;
+        let damping = 0.995;
+        let nonlinearity = 0.0;
+        let qFactor = 10;
+        let imageCoupling = 0.3;
+        let threshold = 128;
+        let waveType = 'coupled';
+        let billiardShape = 'none';
+        let topology = 'nearest';
+        let oscCount = 16;
+        let quality = 'medium';
+        let colorMode = 'amplitude';
+        let tracerCount = 50;
+        let tracerSpeed = 1.0;
+        let tracerLifetime = 300;
+        
+        // Network connectivity
+        let connectionMatrix = [];
+        let adjacencyList = [];
+        
+        // Helper function to convert HSB to RGB (since colorMode isn't available in WebGL)
+        function hsbToRgb(h, s, b) {
+            h = h % 360;
+            s = s / 255;
+            b = b / 255;
+            
+            let c = b * s;
+            let x = c * (1 - abs((h / 60) % 2 - 1));
+            let m = b - c;
+            
+            let r = 0, g = 0, blue = 0;
+            
+            if (0 <= h && h < 60) {
+                r = c; g = x; blue = 0;
+            } else if (60 <= h && h < 120) {
+                r = x; g = c; blue = 0;
+            } else if (120 <= h && h < 180) {
+                r = 0; g = c; blue = x;
+            } else if (180 <= h && h < 240) {
+                r = 0; g = x; blue = c;
+            } else if (240 <= h && h < 300) {
+                r = x; g = 0; blue = c;
+            } else if (300 <= h && h < 360) {
+                r = c; g = 0; blue = x;
+            }
+            
+            return {
+                r: (r + m) * 255,
+                g: (g + m) * 255,
+                b: (blue + m) * 255
+            };
+        }
+        
+        // Shader source code (defined at global scope)
+        let waveVertSource = `
+            attribute vec3 aPosition;
+            attribute vec2 aTexCoord;
+            varying vec2 vTexCoord;
+            
+            void main() {
+                vTexCoord = aTexCoord;
+                vec4 positionVec4 = vec4(aPosition, 1.0);
+                positionVec4.xy = positionVec4.xy * 2.0 - 1.0;
+                gl_Position = positionVec4;
+            }
+        `;
+        
+        let waveFragSource = `
+            precision highp float;
+            
+            uniform sampler2D u_previousFrame;
+            uniform sampler2D u_imageTexture;
+            uniform vec2 u_resolution;
+            uniform float u_time;
+            uniform float u_waveSpeed;
+            uniform float u_damping;
+            uniform float u_coupling;
+            uniform float u_nonlinearity;
+            uniform float u_imageCoupling;
+            uniform vec2 u_oscillators[64];
+            uniform float u_frequencies[64];
+            uniform float u_phases[64];
+            uniform int u_oscCount;
+            uniform int u_waveType;
+            uniform vec2 u_obstacles[256];
+            uniform float u_obstacleRadii[256];
+            uniform int u_obstacleCount;
+            
+            varying vec2 vTexCoord;
+            
+            float oscillatorContribution(vec2 pos, vec2 oscPos, float freq, float phase) {
+                float dist = distance(pos, oscPos);
+                return sin(dist * freq - u_time + phase) / (1.0 + dist * 0.01);
+            }
+            
+            float coupling_force(vec2 pos, vec2 neighbor_pos, float neighbor_amplitude) {
+                float dist = distance(pos, neighbor_pos);
+                return neighbor_amplitude * exp(-dist * 0.1) * u_coupling;
+            }
+            
+            float imageResonance(vec2 pos) {
+                vec4 imgColor = texture2D(u_imageTexture, pos / u_resolution);
+                float brightness = dot(imgColor.rgb, vec3(0.299, 0.587, 0.114));
+                return (1.0 - brightness) * u_imageCoupling;
+            }
+            
+            void main() {
+                vec2 pos = vTexCoord * u_resolution;
+                vec4 prev = texture2D(u_previousFrame, vTexCoord);
+                
+                float amplitude = 0.0;
+                float couplingForce = 0.0;
+                float resonantForce = 0.0;
+                
+                // Calculate oscillator contributions
+                for(int i = 0; i < 64; i++) {
+                    if(i >= u_oscCount) break;
+                    amplitude += oscillatorContribution(pos, u_oscillators[i], u_frequencies[i], u_phases[i]);
+                }
+                
+                // Add coupling from nearby points
+                vec2 offset = 1.0 / u_resolution;
+                couplingForce += coupling_force(pos, pos + vec2(offset.x, 0.0), 
+                                              texture2D(u_previousFrame, vTexCoord + vec2(offset.x, 0.0)).r);
+                couplingForce += coupling_force(pos, pos + vec2(-offset.x, 0.0), 
+                                              texture2D(u_previousFrame, vTexCoord - vec2(offset.x, 0.0)).r);
+                couplingForce += coupling_force(pos, pos + vec2(0.0, offset.y), 
+                                              texture2D(u_previousFrame, vTexCoord + vec2(0.0, offset.y)).r);
+                couplingForce += coupling_force(pos, pos + vec2(0.0, -offset.y), 
+                                              texture2D(u_previousFrame, vTexCoord - vec2(0.0, -offset.y)).r);
+                
+                // Image-based resonance
+                resonantForce = imageResonance(pos) * sin(u_time * 2.0);
+                
+                // Obstacle reflections
+                for(int i = 0; i < 256; i++) {
+                    if(i >= u_obstacleCount) break;
+                    float dist = distance(pos, u_obstacles[i]);
+                    if(dist < u_obstacleRadii[i] * 2.0) {
+                        amplitude += sin(dist * 0.1 - u_time) * 0.3 / (1.0 + dist * 0.01);
+                    }
+                }
+                
+                // Nonlinear terms
+                float nonlinearTerm = u_nonlinearity * prev.r * prev.r * prev.r;
+                
+                // Combine all forces
+                float newAmplitude = (amplitude + couplingForce + resonantForce - nonlinearTerm) * u_damping;
+                
+                // Store phase information in green channel
+                float phase = atan(prev.g, prev.r) + u_time * 0.1;
+                
+                gl_FragColor = vec4(newAmplitude, sin(phase), cos(phase), 1.0);
+            }
+        `;
+        
+        function setup() {
+            createCanvas(windowWidth, windowHeight, WEBGL);
+            
+            // Create shader after canvas is initialized
+            waveShader = createShader(waveVertSource, waveFragSource);
+            
+            // Initialize buffers
+            waveBuffer = createGraphics(width/2, height/2, WEBGL);
+            displayBuffer = createGraphics(width, height, WEBGL);
+            
+            // Set up file input and controls
+            document.getElementById('fileInput').addEventListener('change', handleFile);
+            setupControls();
+            
+            // Initialize oscillator network
+            initializeOscillators();
+            
+            // Create resonant mode system
+            createResonantModes();
+            
+            // Initialize particle tracers
+            initializeTracers();
+            
+            console.log('WebGL Wave Billiards System Initialized');
+        }
+        
+        function setupControls() {
+            const controls = {
+                'waveSpeed': (v) => { waveSpeed = parseFloat(v); document.getElementById('speedValue').textContent = waveSpeed.toFixed(1); },
+                'baseFreq': (v) => { baseFreq = parseFloat(v); document.getElementById('baseFreqValue').textContent = baseFreq.toFixed(2); updateOscillatorFrequencies(); },
+                'freqSpread': (v) => { freqSpread = parseFloat(v); document.getElementById('freqSpreadValue').textContent = freqSpread.toFixed(2); updateOscillatorFrequencies(); },
+                'coupling': (v) => { coupling = parseFloat(v); document.getElementById('couplingValue').textContent = coupling.toFixed(2); },
+                'damping': (v) => { damping = parseFloat(v); document.getElementById('dampValue').textContent = damping.toFixed(3); },
+                'nonlinear': (v) => { nonlinearity = parseFloat(v); document.getElementById('nonlinearValue').textContent = nonlinearity.toFixed(2); },
+                'qFactor': (v) => { qFactor = parseInt(v); document.getElementById('qFactorValue').textContent = qFactor; },
+                'imageCoupling': (v) => { imageCoupling = parseFloat(v); document.getElementById('imageCouplingValue').textContent = imageCoupling.toFixed(2); },
+                'threshold': (v) => { threshold = parseInt(v); document.getElementById('threshValue').textContent = threshold; if(img) detectObjects(); },
+                'oscCount': (v) => { oscCount = parseInt(v); document.getElementById('oscCountValue').textContent = oscCount; initializeOscillators(); },
+                'tracerCountSlider': (v) => { tracerCount = parseInt(v); document.getElementById('tracerCountValue').textContent = tracerCount; initializeTracers(); },
+                'tracerSpeedSlider': (v) => { tracerSpeed = parseFloat(v); document.getElementById('tracerSpeedValue').textContent = tracerSpeed.toFixed(1); },
+                'tracerLifetimeSlider': (v) => { tracerLifetime = parseInt(v); document.getElementById('tracerLifetimeValue').textContent = tracerLifetime; }
+            };
+            
+            Object.keys(controls).forEach(id => {
+                const element = document.getElementById(id);
+                if(element) {
+                    element.addEventListener('input', (e) => controls[id](e.target.value));
+                }
+            });
+            
+            // Dropdown controls
+            document.getElementById('waveType').addEventListener('change', (e) => { waveType = e.target.value; });
+            document.getElementById('billiardShape').addEventListener('change', (e) => { billiardShape = e.target.value; createBilliardBoundary(); });
+            document.getElementById('topology').addEventListener('change', (e) => { topology = e.target.value; buildNetwork(); });
+            document.getElementById('quality').addEventListener('change', (e) => { quality = e.target.value; });
+            document.getElementById('colorMode').addEventListener('change', (e) => { colorMode = e.target.value; });
+        }
+        
+        function initializeOscillators() {
+            oscillators = [];
+            
+            // Create oscillators based on image objects or default grid
+            if(obstacles.length > 0) {
+                // Use detected objects as oscillator positions
+                for(let i = 0; i < min(oscCount, obstacles.length); i++) {
+                    oscillators.push({
+                        x: obstacles[i].x,
+                        y: obstacles[i].y,
+                        frequency: baseFreq + (noise(i * 0.1) - 0.5) * freqSpread,
+                        phase: random(TWO_PI),
+                        amplitude: 1.0,
+                        connections: []
+                    });
+                }
+            } else {
+                // Default grid arrangement
+                let gridSize = ceil(sqrt(oscCount));
+                let spacing = min(width, height) * 0.6 / gridSize;
+                let startX = width/2 - (gridSize-1) * spacing/2;
+                let startY = height/2 - (gridSize-1) * spacing/2;
+                
+                for(let i = 0; i < oscCount; i++) {
+                    let row = floor(i / gridSize);
+                    let col = i % gridSize;
+                    
+                    oscillators.push({
+                        x: startX + col * spacing,
+                        y: startY + row * spacing,
+                        frequency: baseFreq + (noise(i * 0.1) - 0.5) * freqSpread,
+                        phase: random(TWO_PI),
+                        amplitude: 1.0,
+                        connections: []
+                    });
+                }
+            }
+            
+            updateOscillatorFrequencies();
+            buildNetwork();
+        }
+        
+        function updateOscillatorFrequencies() {
+            oscillators.forEach((osc, i) => {
+                osc.frequency = baseFreq + (noise(i * 0.1) - 0.5) * freqSpread;
+            });
+        }
+        
+        function buildNetwork() {
+            // Clear existing connections
+            oscillators.forEach(osc => osc.connections = []);
+            connectionMatrix = Array(oscCount).fill().map(() => Array(oscCount).fill(0));
+            adjacencyList = Array(oscCount).fill().map(() => []);
+            
+            switch(topology) {
+                case 'nearest':
+                    buildNearestNeighborNetwork();
+                    break;
+                case 'global':
+                    buildGlobalNetwork();
+                    break;
+                case 'random':
+                    buildRandomNetwork();
+                    break;
+                case 'lattice':
+                    build2DLatticeNetwork();
+                    break;
+                case 'smallworld':
+                    buildSmallWorldNetwork();
+                    break;
+            }
+        }
+        
+        function buildNearestNeighborNetwork() {
+            oscillators.forEach((osc, i) => {
+                let distances = oscillators.map((other, j) => ({
+                    index: j,
+                    distance: i === j ? Infinity : dist(osc.x, osc.y, other.x, other.y)
+                }));
+                
+                distances.sort((a, b) => a.distance - b.distance);
+                
+                // Connect to 2-4 nearest neighbors
+                let numConnections = min(4, oscillators.length - 1);
+                for(let k = 0; k < numConnections; k++) {
+                    let neighborIdx = distances[k].index;
+                    osc.connections.push(neighborIdx);
+                    connectionMatrix[i][neighborIdx] = 1;
+                    adjacencyList[i].push(neighborIdx);
+                }
+            });
+        }
+        
+        function buildGlobalNetwork() {
+            oscillators.forEach((osc, i) => {
+                oscillators.forEach((other, j) => {
+                    if(i !== j) {
+                        osc.connections.push(j);
+                        connectionMatrix[i][j] = 1;
+                        adjacencyList[i].push(j);
+                    }
+                });
+            });
+        }
+        
+        function buildRandomNetwork() {
+            let connectionProb = 0.3; // 30% connection probability
+            oscillators.forEach((osc, i) => {
+                oscillators.forEach((other, j) => {
+                    if(i !== j && random() < connectionProb) {
+                        osc.connections.push(j);
+                        connectionMatrix[i][j] = 1;
+                        adjacencyList[i].push(j);
+                    }
+                });
+            });
+        }
+        
+        function build2DLatticeNetwork() {
+            let gridSize = ceil(sqrt(oscCount));
+            oscillators.forEach((osc, i) => {
+                let row = floor(i / gridSize);
+                let col = i % gridSize;
+                
+                // Connect to orthogonal neighbors
+                let neighbors = [
+                    (row-1) * gridSize + col, // up
+                    (row+1) * gridSize + col, // down
+                    row * gridSize + (col-1), // left
+                    row * gridSize + (col+1)  // right
+                ];
+                
+                neighbors.forEach(neighborIdx => {
+                    if(neighborIdx >= 0 && neighborIdx < oscCount && neighborIdx !== i) {
+                        osc.connections.push(neighborIdx);
+                        connectionMatrix[i][neighborIdx] = 1;
+                        adjacencyList[i].push(neighborIdx);
+                    }
+                });
+            });
+        }
+        
+        function buildSmallWorldNetwork() {
+            // Start with lattice, then rewire with probability p
+            build2DLatticeNetwork();
+            let rewireProb = 0.1;
+            
+            oscillators.forEach((osc, i) => {
+                osc.connections = osc.connections.filter(conn => {
+                    if(random() < rewireProb) {
+                        // Rewire to random oscillator
+                        let newConn = floor(random(oscCount));
+                        while(newConn === i) newConn = floor(random(oscCount));
+                        return newConn;
+                    }
+                    return conn;
+                });
+            });
+        }
+        
+        function createResonantModes() {
+            resonantModes = [];
+            
+            // Create modes based on billiard geometry
+            switch(billiardShape) {
+                case 'circle':
+                    createCircularModes();
+                    break;
+                case 'square':
+                    createSquareModes();
+                    break;
+                case 'ellipse':
+                    createEllipticalModes();
+                    break;
+                default:
+                    createGenericModes();
+            }
+        }
+        
+        function createCircularModes() {
+            // Circular cavity modes (Bessel functions)
+            for(let n = 1; n <= 5; n++) {
+                for(let m = 0; m <= n; m++) {
+                    resonantModes.push({
+                        n: n,
+                        m: m,
+                        frequency: baseFreq * n * (1 + 0.1 * m),
+                        amplitude: 1.0 / n,
+                        phase: random(TWO_PI),
+                        qFactor: qFactor * (1 + 0.2 * n)
+                    });
+                }
+            }
+        }
+        
+        function createSquareModes() {
+            // Square cavity modes
+            for(let nx = 1; nx <= 4; nx++) {
+                for(let ny = 1; ny <= 4; ny++) {
+                    resonantModes.push({
+                        nx: nx,
+                        ny: ny,
+                        frequency: baseFreq * sqrt(nx*nx + ny*ny),
+                        amplitude: 1.0 / sqrt(nx*nx + ny*ny),
+                        phase: random(TWO_PI),
+                        qFactor: qFactor
+                    });
+                }
+            }
+        }
+        
+        function createEllipticalModes() {
+            // Elliptical cavity modes (approximate)
+            for(let n = 1; n <= 6; n++) {
+                for(let m = 0; m <= n; m++) {
+                    resonantModes.push({
+                        n: n,
+                        m: m,
+                        frequency: baseFreq * n * sqrt(1 + 0.3 * m),
+                        amplitude: exp(-0.1 * n),
+                        phase: random(TWO_PI),
+                        qFactor: qFactor * (1 + 0.1 * m)
+                    });
+                }
+            }
+        }
+        
+        function createGenericModes() {
+            // Generic chaotic cavity modes
+            for(let i = 0; i < 20; i++) {
+                resonantModes.push({
+                    frequency: baseFreq * (1 + i * 0.15 + noise(i * 0.1) * 0.1),
+                    amplitude: exp(-0.05 * i),
+                    phase: random(TWO_PI),
+                    qFactor: qFactor * (0.8 + 0.4 * noise(i * 0.2))
+                });
+            }
+        }
+        
+        function handleFile(event) {
+            const file = event.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    loadImage(e.target.result, (loadedImg) => {
+                        img = loadedImg;
+                        let scale = min(width / img.width, height / img.height) * 0.8;
+                        img.resize(img.width * scale, img.height * scale);
+                        
+                        // Create WebGL texture
+                        imgTexture = createGraphics(img.width, img.height);
+                        imgTexture.image(img, 0, 0);
+                        
+                        detectObjects();
+                        initializeOscillators(); // Reinitialize with new object positions
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        function detectObjects() {
+            if (!img) return;
+            
+            obstacles = [];
+            img.loadPixels();
+            
+            let step = 8;
+            for (let y = step; y < img.height - step; y += step) {
+                for (let x = step; x < img.width - step; x += step) {
+                    let idx = (y * img.width + x) * 4;
+                    let brightness = (img.pixels[idx] + img.pixels[idx + 1] + img.pixels[idx + 2]) / 3;
+                    
+                    if (brightness < threshold) {
+                        // Enhanced edge detection
+                        let gradientMag = 0;
+                        for (let dy = -step; dy <= step; dy += step) {
+                            for (let dx = -step; dx <= step; dx += step) {
+                                if (dx === 0 && dy === 0) continue;
+                                let nIdx = ((y + dy) * img.width + (x + dx)) * 4;
+                                if (nIdx >= 0 && nIdx < img.pixels.length - 2) {
+                                    let nBrightness = (img.pixels[nIdx] + img.pixels[nIdx + 1] + img.pixels[nIdx + 2]) / 3;
+                                    gradientMag += abs(brightness - nBrightness);
+                                }
+                            }
+                        }
+                        
+                        if (gradientMag > 200) {
+                            obstacles.push({
+                                x: x + (width - img.width) / 2,
+                                y: y + (height - img.height) / 2,
+                                radius: step + noise(x * 0.01, y * 0.01) * step * 0.5,
+                                resonantFreq: baseFreq * (1 + (1 - brightness/255) * imageCoupling),
+                                qFactor: qFactor * (brightness/255 + 0.5)
+                            });
+                        }
+                    }
+                }
+            }
+            
+            console.log(`Detected ${obstacles.length} resonant objects`);
+            
+            // Reinitialize tracers with new object positions
+            initializeTracers();
+        }
+        
+        function initializeTracers() {
+            tracers = [];
+            
+            for(let i = 0; i < tracerCount; i++) {
+                // Create tracers with varied frequencies based on oscillators or random
+                let baseOsc = oscillators.length > 0 ? 
+                    oscillators[floor(random(oscillators.length))] : 
+                    { x: random(width), y: random(height), frequency: baseFreq };
+                
+                let tracer = {
+                    x: random(width * 0.2, width * 0.8),
+                    y: random(height * 0.2, height * 0.8),
+                    vx: random(-1, 1),
+                    vy: random(-1, 1),
+                    frequency: baseOsc.frequency * (0.5 + random() * 1.5), // Varied frequency
+                    phase: random(TWO_PI),
+                    amplitude: 1.0,
+                    age: 0,
+                    maxAge: tracerLifetime + random(-50, 50),
+                    trail: [],
+                    color: {
+                        h: map(baseOsc.frequency, baseFreq * 0.5, baseFreq * 2, 240, 60),
+                        s: 200 + random(55),
+                        b: 255
+                    },
+                    resonantToOscillator: floor(random(oscillators.length || 1)),
+                    mass: 0.8 + random(0.4), // Affects response to forces
+                    charge: random() > 0.5 ? 1 : -1 // Positive/negative for different behaviors
+                };
+                
+                tracers.push(tracer);
+            }
+            
+            console.log(`Initialized ${tracers.length} particle tracers`);
+        }
+        
+        function updateTracers() {
+            tracers.forEach((tracer, index) => {
+                // Age the tracer
+                tracer.age++;
+                
+                // Remove old tracers
+                if(tracer.age > tracer.maxAge) {
+                    tracers.splice(index, 1);
+                    return;
+                }
+                
+                // Calculate forces from wave field
+                let waveForceX = 0;
+                let waveForceY = 0;
+                let localAmplitude = calculateWaveAmplitude(tracer.x - width/2, tracer.y - height/2);
+                let localPhase = calculateWavePhase(tracer.x - width/2, tracer.y - height/2);
+                
+                // Wave gradient force (particles follow wave gradients)
+                let dx = 2;
+                let leftAmp = calculateWaveAmplitude(tracer.x - width/2 - dx, tracer.y - height/2);
+                let rightAmp = calculateWaveAmplitude(tracer.x - width/2 + dx, tracer.y - height/2);
+                let topAmp = calculateWaveAmplitude(tracer.x - width/2, tracer.y - height/2 - dx);
+                let bottomAmp = calculateWaveAmplitude(tracer.x - width/2, tracer.y - height/2 + dx);
+                
+                waveForceX = (rightAmp - leftAmp) / (2 * dx) * 0.1;
+                waveForceY = (bottomAmp - topAmp) / (2 * dx) * 0.1;
+                
+                // Oscillator attraction/repulsion
+                oscillators.forEach(osc => {
+                    let distToOsc = dist(tracer.x, tracer.y, osc.x, osc.y);
+                    if(distToOsc > 0 && distToOsc < 200) {
+                        let oscForce = osc.amplitude * sin(osc.phase) * coupling * 0.1;
+                        let dirX = (osc.x - tracer.x) / distToOsc;
+                        let dirY = (osc.y - tracer.y) / distToOsc;
+                        
+                        // Resonance condition: stronger attraction when frequencies match
+                        let freqMatch = 1 / (1 + abs(tracer.frequency - osc.frequency) * 10);
+                        oscForce *= freqMatch;
+                        
+                        // Charge-based interaction
+                        if(tracer.charge * sin(osc.phase) > 0) {
+                            waveForceX += dirX * oscForce / (distToOsc * 0.01);
+                            waveForceY += dirY * oscForce / (distToOsc * 0.01);
+                        } else {
+                            waveForceX -= dirX * oscForce / (distToOsc * 0.01);
+                            waveForceY -= dirY * oscForce / (distToOsc * 0.01);
+                        }
+                    }
+                });
+                
+                // Obstacle interactions
+                obstacles.forEach(obs => {
+                    let distToObstacle = dist(tracer.x, tracer.y, obs.x, obs.y);
+                    if(distToObstacle < obs.radius * 2) {
+                        // Reflection off obstacles
+                        let normal_x = (tracer.x - obs.x) / distToObstacle;
+                        let normal_y = (tracer.y - obs.y) / distToObstacle;
+                        
+                        // Reflect velocity
+                        let dot = tracer.vx * normal_x + tracer.vy * normal_y;
+                        tracer.vx -= 2 * dot * normal_x * 0.8; // Some energy loss
+                        tracer.vy -= 2 * dot * normal_y * 0.8;
+                        
+                        // Push away from obstacle
+                        waveForceX += normal_x * 0.5;
+                        waveForceY += normal_y * 0.5;
+                    }
+                });
+                
+                // Billiard boundary reflections
+                if(billiardBoundary) {
+                    let reflected = false;
+                    
+                    switch(billiardBoundary.type) {
+                        case 'circle':
+                            let distFromCenter = dist(tracer.x - width/2, tracer.y - height/2, 0, 0);
+                            if(distFromCenter > billiardBoundary.radius) {
+                                let nx = (tracer.x - width/2) / distFromCenter;
+                                let ny = (tracer.y - height/2) / distFromCenter;
+                                let dot = tracer.vx * nx + tracer.vy * ny;
+                                tracer.vx -= 2 * dot * nx * 0.9;
+                                tracer.vy -= 2 * dot * ny * 0.9;
+                                reflected = true;
+                            }
+                            break;
+                        case 'square':
+                            let halfSize = billiardBoundary.size / 2;
+                            let relX = tracer.x - width/2;
+                            let relY = tracer.y - height/2;
+                            
+                            if(abs(relX) > halfSize || abs(relY) > halfSize) {
+                                if(abs(relX) > halfSize) tracer.vx *= -0.9;
+                                if(abs(relY) > halfSize) tracer.vy *= -0.9;
+                                reflected = true;
+                            }
+                            break;
+                    }
+                    
+                    if(reflected) {
+                        // Add some random scatter on reflection
+                        tracer.vx += random(-0.1, 0.1);
+                        tracer.vy += random(-0.1, 0.1);
+                    }
+                }
+                
+                // Apply forces to velocity
+                tracer.vx += waveForceX / tracer.mass;
+                tracer.vy += waveForceY / tracer.mass;
+                
+                // Frequency-dependent modulation
+                let freqModulation = sin(time * tracer.frequency * 10) * 0.02;
+                tracer.vx += cos(tracer.phase) * freqModulation;
+                tracer.vy += sin(tracer.phase) * freqModulation;
+                
+                // Update phase based on local wave field
+                tracer.phase += tracer.frequency * TWO_PI + localPhase * 0.1;
+                
+                // Damping
+                tracer.vx *= 0.995;
+                tracer.vy *= 0.995;
+                
+                // Speed limiting
+                let speed = sqrt(tracer.vx * tracer.vx + tracer.vy * tracer.vy);
+                let maxSpeed = 5 * tracerSpeed;
+                if(speed > maxSpeed) {
+                    tracer.vx = (tracer.vx / speed) * maxSpeed;
+                    tracer.vy = (tracer.vy / speed) * maxSpeed;
+                }
+                
+                // Update position
+                tracer.x += tracer.vx * tracerSpeed;
+                tracer.y += tracer.vy * tracerSpeed;
+                
+                // Keep within canvas bounds (with wrapping for infinite-like behavior)
+                if(tracer.x < 0) tracer.x = width;
+                if(tracer.x > width) tracer.x = 0;
+                if(tracer.y < 0) tracer.y = height;
+                if(tracer.y > height) tracer.y = 0;
+                
+                // Store trail
+                tracer.trail.push({x: tracer.x, y: tracer.y, amplitude: localAmplitude});
+                if(tracer.trail.length > 30) tracer.trail.shift();
+                
+                // Update color based on local wave properties
+                let localFreq = calculateLocalFrequency(tracer.x - width/2, tracer.y - height/2);
+                tracer.color.h = map(localFreq, baseFreq * 0.5, baseFreq * 2, 240, 60);
+                tracer.color.b = map(abs(localAmplitude), 0, 1, 100, 255);
+            });
+            
+            // Add new tracers to maintain count
+            while(tracers.length < tracerCount) {
+                let newTracer = {
+                    x: random(width * 0.2, width * 0.8),
+                    y: random(height * 0.2, height * 0.8),
+                    vx: random(-1, 1),
+                    vy: random(-1, 1),
+                    frequency: baseFreq * (0.5 + random() * 1.5),
+                    phase: random(TWO_PI),
+                    amplitude: 1.0,
+                    age: 0,
+                    maxAge: tracerLifetime + random(-50, 50),
+                    trail: [],
+                    color: {
+                        h: map(baseFreq, baseFreq * 0.5, baseFreq * 2, 240, 60) + random(-30, 30),
+                        s: 200 + random(55),
+                        b: 255
+                    },
+                    resonantToOscillator: floor(random(oscillators.length || 1)),
+                    mass: 0.8 + random(0.4),
+                    charge: random() > 0.5 ? 1 : -1
+                };
+                tracers.push(newTracer);
+            }
+        }
+        
+        function createBilliardBoundary() {
+            billiardBoundary = null;
+            
+            switch(billiardShape) {
+                case 'circle':
+                    billiardBoundary = {
+                        type: 'circle',
+                        x: 0, y: 0,
+                        radius: min(width, height) * 0.35
+                    };
+                    break;
+                case 'ellipse':
+                    billiardBoundary = {
+                        type: 'ellipse',
+                        x: 0, y: 0,
+                        w: width * 0.6, h: height * 0.4
+                    };
+                    break;
+                case 'square':
+                    let size = min(width, height) * 0.6;
+                    billiardBoundary = {
+                        type: 'square',
+                        x: -size/2, y: -size/2,
+                        size: size
+                    };
+                    break;
+                case 'triangle':
+                    billiardBoundary = {
+                        type: 'triangle',
+                        x: 0, y: 0,
+                        size: min(width, height) * 0.3
+                    };
+                    break;
+                case 'stadium':
+                    billiardBoundary = {
+                        type: 'stadium',
+                        x: 0, y: 0,
+                        w: width * 0.4, h: height * 0.2
+                    };
+                    break;
+                case 'sinai':
+                    billiardBoundary = {
+                        type: 'sinai',
+                        x: 0, y: 0,
+                        outerSize: min(width, height) * 0.4,
+                        innerRadius: min(width, height) * 0.1
+                    };
+                    break;
+            }
+        }
+        
+        function draw() {
+            background(0);
+            
+            if (!isPaused) {
+                time += 0.016 * waveSpeed; // Assume 60fps
+                updateOscillators();
+                updateResonantModes();
+                updateTracers();
+            }
+            
+            // Render wave field
+            renderWaveField();
+            
+            // Draw oscillator network connections
+            drawNetwork();
+            
+            // Draw oscillators
+            drawOscillators();
+            
+            // Draw obstacles and resonant objects
+            if (showObjects) {
+                drawObstacles();
+            }
+            
+            // Draw billiard boundary
+            drawBilliardBoundary();
+            
+            // Draw particle tracers
+            if (showTracers) {
+                drawTracers();
+            }
+            
+            // Update system info
+            updateSystemInfo();
+        }
+        
+        function updateOscillators() {
+            oscillators.forEach((osc, i) => {
+                // Update phase
+                osc.phase += osc.frequency * TWO_PI;
+                
+                // Coupling with neighbors
+                let couplingForce = 0;
+                osc.connections.forEach(connIdx => {
+                    let neighbor = oscillators[connIdx];
+                    let phaseDiff = neighbor.phase - osc.phase;
+                    couplingForce += sin(phaseDiff) * coupling;
+                });
+                
+                // Image-based modulation
+                if (obstacles.length > 0) {
+                    let nearestObstacle = obstacles.reduce((nearest, obs) => {
+                        let d1 = dist(osc.x, osc.y, obs.x, obs.y);
+                        let d2 = dist(osc.x, osc.y, nearest.x, nearest.y);
+                        return d1 < d2 ? obs : nearest;
+                    });
+                    
+                    let distToObstacle = dist(osc.x, osc.y, nearestObstacle.x, nearestObstacle.y);
+                    if (distToObstacle < 100) {
+                        osc.frequency = lerp(osc.frequency, nearestObstacle.resonantFreq, 0.01);
+                    }
+                }
+                
+                // Apply coupling force to frequency
+                osc.frequency += couplingForce * 0.001;
+                
+                // Apply damping
+                osc.amplitude *= damping;
+                
+                // Nonlinear terms
+                if (nonlinearity > 0) {
+                    osc.amplitude += nonlinearity * sin(osc.phase) * osc.amplitude * osc.amplitude;
+                }
+            });
+        }
+        
+        function updateResonantModes() {
+            resonantModes.forEach(mode => {
+                mode.phase += mode.frequency * TWO_PI;
+                mode.amplitude *= (1 - 1/mode.qFactor);
+                
+                // Add energy from oscillators that match frequency
+                oscillators.forEach(osc => {
+                    if (abs(osc.frequency - mode.frequency) < freqSpread) {
+                        mode.amplitude += coupling * 0.01 * sin(osc.phase);
+                    }
+                });
+            });
+        }
+        
+        function renderWaveField() {
+            push();
+            
+            let pixelSize = quality === 'ultra' ? 1 : quality === 'high' ? 2 : quality === 'medium' ? 4 : 8;
+            
+            for (let y = -height/2; y < height/2; y += pixelSize) {
+                for (let x = -width/2; x < width/2; x += pixelSize) {
+                    let amplitude = calculateWaveAmplitude(x, y);
+                    let phase = calculateWavePhase(x, y);
+                    let frequency = calculateLocalFrequency(x, y);
+                    let energy = amplitude * amplitude;
+                    
+                    let col;
+                    switch(colorMode) {
+                        case 'amplitude':
+                            let intensity = map(abs(amplitude), 0, 2, 0, 255);
+                            if (amplitude > 0) {
+                                col = color(intensity, intensity * 0.3, 0, 150); // Red for positive
+                            } else {
+                                col = color(0, intensity * 0.3, intensity, 150); // Blue for negative
+                            }
+                            break;
+                        case 'phase':
+                            let phaseNorm = map(phase, -PI, PI, 0, 1);
+                            col = color(
+                                255 * sin(phaseNorm * TWO_PI),
+                                255 * sin(phaseNorm * TWO_PI + TWO_PI/3),
+                                255 * sin(phaseNorm * TWO_PI + 4*TWO_PI/3),
+                                100
+                            );
+                            break;
+                        case 'frequency':
+                            let freqNorm = map(frequency, baseFreq * 0.5, baseFreq * 2, 0, 1);
+                            col = color(
+                                255 * (1 - freqNorm), // Red to Green gradient
+                                255 * freqNorm,
+                                100,
+                                120
+                            );
+                            break;
+                        case 'energy':
+                            let energyIntensity = map(energy, 0, 1, 0, 255);
+                            col = color(energyIntensity, energyIntensity * 0.5, energyIntensity * 0.8, 100);
+                            break;
+                    }
+                    
+                    fill(col);
+                    noStroke();
+                    rect(x, y, pixelSize, pixelSize);
+                }
+            }
+            
+            pop();
+        }
+        
+        function calculateWaveAmplitude(x, y) {
+            let amplitude = 0;
+            
+            switch(waveType) {
+                case 'coupled':
+                    // Coupled oscillator contributions
+                    oscillators.forEach(osc => {
+                        let distance = dist(x, y, osc.x - width/2, osc.y - height/2);
+                        amplitude += osc.amplitude * sin(distance * osc.frequency - time + osc.phase) / (1 + distance * 0.01);
+                    });
+                    break;
+                    
+                case 'resonant':
+                    // Resonant mode contributions
+                    resonantModes.forEach(mode => {
+                        if(billiardShape === 'square' && mode.nx && mode.ny) {
+                            amplitude += mode.amplitude * sin(mode.nx * PI * (x + width/2) / width) * 
+                                        sin(mode.ny * PI * (y + height/2) / height) * 
+                                        cos(time * mode.frequency + mode.phase);
+                        } else if(billiardShape === 'circle' && mode.n && mode.m !== undefined) {
+                            let r = sqrt(x*x + y*y);
+                            let theta = atan2(y, x);
+                            amplitude += mode.amplitude * sin(mode.n * r * 0.01) * cos(mode.m * theta) * 
+                                        cos(time * mode.frequency + mode.phase);
+                        } else {
+                            let r = sqrt(x*x + y*y);
+                            amplitude += mode.amplitude * sin(r * mode.frequency - time + mode.phase) / (1 + r * 0.01);
+                        }
+                    });
+                    break;
+                    
+                case 'interference':
+                    // Young's double slit type interference
+                    if(oscillators.length >= 2) {
+                        let amp1 = 0, amp2 = 0;
+                        for(let i = 0; i < min(2, oscillators.length); i++) {
+                            let distance = dist(x, y, oscillators[i].x - width/2, oscillators[i].y - height/2);
+                            if(i === 0) amp1 = sin(distance * baseFreq - time);
+                            else amp2 = sin(distance * baseFreq - time + PI);
+                        }
+                        amplitude = amp1 + amp2;
+                    }
+                    break;
+                    
+                case 'quantum':
+                    // Quantum probability density
+                    let waveFunction = 0;
+                    oscillators.forEach(osc => {
+                        let distance = dist(x, y, osc.x - width/2, osc.y - height/2);
+                        let phase = distance * osc.frequency - time + osc.phase;
+                        waveFunction += cos(phase) + sin(phase) * 0.707; // |ψ|²
+                    });
+                    amplitude = waveFunction * waveFunction;
+                    break;
+                    
+                case 'nonlinear':
+                    // Nonlinear wave coupling
+                    oscillators.forEach(osc => {
+                        let distance = dist(x, y, osc.x - width/2, osc.y - height/2);
+                        let linearWave = sin(distance * osc.frequency - time + osc.phase) / (1 + distance * 0.01);
+                        amplitude += linearWave + nonlinearity * linearWave * linearWave * linearWave;
+                    });
+                    break;
+            }
+            
+            // Add obstacle reflections
+            obstacles.forEach(obs => {
+                let distance = dist(x, y, obs.x - width/2, obs.y - height/2);
+                if(distance < obs.radius * 2) {
+                    amplitude += sin(distance * obs.resonantFreq - time) * 0.3 * imageCoupling;
+                }
+            });
+            
+            return amplitude * damping;
+        }
+        
+        function calculateWavePhase(x, y) {
+            let phase = 0;
+            let count = 0;
+            
+            oscillators.forEach(osc => {
+                let distance = dist(x, y, osc.x - width/2, osc.y - height/2);
+                phase += distance * osc.frequency - time + osc.phase;
+                count++;
+            });
+            
+            return count > 0 ? phase / count : 0;
+        }
+        
+        function calculateLocalFrequency(x, y) {
+            let freq = baseFreq;
+            
+            // Modulate frequency based on image if available
+            if(obstacles.length > 0) {
+                let nearestObstacle = obstacles.reduce((nearest, obs) => {
+                    let d1 = dist(x, y, obs.x - width/2, obs.y - height/2);
+                    let d2 = dist(x, y, nearest.x - width/2, nearest.y - height/2);
+                    return d1 < d2 ? obs : nearest;
+                });
+                
+                let distToObstacle = dist(x, y, nearestObstacle.x - width/2, nearestObstacle.y - height/2);
+                if(distToObstacle < 50) {
+                    freq = lerp(freq, nearestObstacle.resonantFreq, imageCoupling);
+                }
+            }
+            
+            return freq;
+        }
+        
+        function drawNetwork() {
+            stroke(0, 255, 0, 50);
+            strokeWeight(1);
+            
+            oscillators.forEach((osc, i) => {
+                osc.connections.forEach(connIdx => {
+                    let neighbor = oscillators[connIdx];
+                    line(osc.x - width/2, osc.y - height/2, 
+                         neighbor.x - width/2, neighbor.y - height/2);
+                });
+            });
+        }
+        
+        function drawOscillators() {
+            oscillators.forEach((osc, i) => {
+                push();
+                translate(osc.x - width/2, osc.y - height/2);
+                
+                // Oscillator size based on amplitude
+                let size = 5 + osc.amplitude * 10;
+                
+                // Color based on frequency (convert HSB to RGB)
+                let freqHue = map(osc.frequency, baseFreq * 0.5, baseFreq * 2, 240, 0);
+                let rgb = hsbToRgb(freqHue, 255, 255);
+                fill(rgb.r, rgb.g, rgb.b, 200);
+                
+                noStroke();
+                ellipse(0, 0, size);
+                
+                // Phase indicator
+                stroke(255, 255, 255, 150);
+                strokeWeight(2);
+                let phaseX = cos(osc.phase) * size/2;
+                let phaseY = sin(osc.phase) * size/2;
+                line(0, 0, phaseX, phaseY);
+                
+                pop();
+            });
+        }
+        
+        function drawObstacles() {
+            obstacles.forEach(obs => {
+                push();
+                translate(obs.x - width/2, obs.y - height/2);
+                
+                // Resonance visualization
+                let resonanceSize = obs.radius + sin(time * obs.resonantFreq * 10) * 5;
+                
+                stroke(255, 100, 0, 100);
+                strokeWeight(2);
+                noFill();
+                ellipse(0, 0, resonanceSize * 2);
+                
+                // Core object
+                fill(255, 50, 0, 150);
+                noStroke();
+                ellipse(0, 0, obs.radius);
+                
+                pop();
+            });
+        }
+        
+        function drawBilliardBoundary() {
+            if (!billiardBoundary) return;
+            
+            stroke(0, 255, 255, 150);
+            strokeWeight(3);
+            noFill();
+            
+            switch(billiardBoundary.type) {
+                case 'circle':
+                    ellipse(0, 0, billiardBoundary.radius * 2);
+                    break;
+                case 'ellipse':
+                    ellipse(0, 0, billiardBoundary.w, billiardBoundary.h);
+                    // Draw foci
+                    let c = sqrt(sq(billiardBoundary.w/2) - sq(billiardBoundary.h/2));
+                    fill(255, 255, 0, 100);
+                    noStroke();
+                    ellipse(-c, 0, 8);
+                    ellipse(c, 0, 8);
+                    break;
+                case 'square':
+                    stroke(0, 255, 255, 150);
+                    strokeWeight(3);
+                    noFill();
+                    rect(billiardBoundary.x, billiardBoundary.y, 
+                         billiardBoundary.size, billiardBoundary.size);
+                    break;
+                case 'triangle':
+                    let h = billiardBoundary.size * sqrt(3) / 2;
+                    triangle(0, -h/2, -billiardBoundary.size/2, h/2, billiardBoundary.size/2, h/2);
+                    break;
+                case 'stadium':
+                    let r = billiardBoundary.h / 2;
+                    rect(-billiardBoundary.w/2 + r, -r, billiardBoundary.w - billiardBoundary.h, billiardBoundary.h);
+                    arc(-billiardBoundary.w/2 + r, 0, billiardBoundary.h, billiardBoundary.h, PI/2, 3*PI/2);
+                    arc(billiardBoundary.w/2 - r, 0, billiardBoundary.h, billiardBoundary.h, -PI/2, PI/2);
+                    break;
+                case 'sinai':
+                    rect(-billiardBoundary.outerSize/2, -billiardBoundary.outerSize/2, 
+                         billiardBoundary.outerSize, billiardBoundary.outerSize);
+                    ellipse(0, 0, billiardBoundary.innerRadius * 2);
+                    break;
+            }
+        }
+        
+        function drawTracers() {
+            tracers.forEach(tracer => {
+                push();
+                translate(tracer.x - width/2, tracer.y - height/2);
+                
+                // Draw trail
+                if(tracer.trail.length > 1) {
+                    for(let i = 1; i < tracer.trail.length; i++) {
+                        let alpha = map(i, 0, tracer.trail.length, 0, 100);
+                        let trailIntensity = map(abs(tracer.trail[i].amplitude), 0, 1, 0.2, 1.0);
+                        
+                        let trailRgb = hsbToRgb(tracer.color.h, tracer.color.s, tracer.color.b * trailIntensity);
+                        stroke(trailRgb.r, trailRgb.g, trailRgb.b, alpha);
+                        strokeWeight(map(i, 0, tracer.trail.length, 0.5, 3));
+                        
+                        let prevPoint = tracer.trail[i-1];
+                        let currPoint = tracer.trail[i];
+                        line(prevPoint.x - tracer.x, prevPoint.y - tracer.y, 
+                             currPoint.x - tracer.x, currPoint.y - tracer.y);
+                    }
+                }
+                
+                // Draw main particle
+                let age_factor = 1 - (tracer.age / tracer.maxAge);
+                let size = 3 + tracer.amplitude * 4 * age_factor;
+                
+                // Pulsing based on frequency
+                let pulse = 1 + sin(tracer.phase) * 0.3;
+                size *= pulse;
+                
+                // Core particle
+                let coreRgb = hsbToRgb(tracer.color.h, tracer.color.s, tracer.color.b);
+                fill(coreRgb.r, coreRgb.g, coreRgb.b, 200 * age_factor);
+                noStroke();
+                ellipse(0, 0, size);
+                
+                // Frequency indicator ring
+                let ringRgb = hsbToRgb(tracer.color.h, 255, 255);
+                stroke(ringRgb.r, ringRgb.g, ringRgb.b, 100 * age_factor);
+                strokeWeight(1);
+                noFill();
+                let ringSize = size + 3 + sin(time * tracer.frequency * 20) * 2;
+                ellipse(0, 0, ringSize);
+                
+                // Charge indicator (small dot)
+                if(tracer.charge > 0) {
+                    let yellowRgb = hsbToRgb(60, 255, 255);
+                    fill(yellowRgb.r, yellowRgb.g, yellowRgb.b, 150 * age_factor); // Yellow for positive
+                } else {
+                    let magentaRgb = hsbToRgb(300, 255, 255);
+                    fill(magentaRgb.r, magentaRgb.g, magentaRgb.b, 150 * age_factor); // Magenta for negative
+                }
+                noStroke();
+                ellipse(0, 0, size * 0.3);
+                
+                // Velocity vector (if moving fast enough)
+                let speed = sqrt(tracer.vx * tracer.vx + tracer.vy * tracer.vy);
+                if(speed > 0.5) {
+                    let velocityRgb = hsbToRgb(tracer.color.h, 100, 255);
+                    stroke(velocityRgb.r, velocityRgb.g, velocityRgb.b, 100 * age_factor);
+                    strokeWeight(1);
+                    let vecLength = map(speed, 0, 5, 0, 15);
+                    line(0, 0, (tracer.vx / speed) * vecLength, (tracer.vy / speed) * vecLength);
+                }
+                
+                // Resonance visualization when near matching oscillator
+                if(oscillators.length > 0) {
+                    let resonantOsc = oscillators[tracer.resonantToOscillator % oscillators.length];
+                    let distToResonantOsc = dist(tracer.x, tracer.y, resonantOsc.x, resonantOsc.y);
+                    
+                    if(distToResonantOsc < 100 && abs(tracer.frequency - resonantOsc.frequency) < freqSpread) {
+                        let resonanceStrength = 1 / (1 + abs(tracer.frequency - resonantOsc.frequency) * 20);
+                        
+                        stroke(120, 255, 255, 50 * resonanceStrength * age_factor);
+                        strokeWeight(0.5);
+                        noFill();
+                        
+                        // Draw connection line to resonant oscillator
+                        let oscX = resonantOsc.x - tracer.x;
+                        let oscY = resonantOsc.y - tracer.y;
+                        line(0, 0, oscX, oscY);
+                        
+                        // Resonance energy ring
+                        let resonanceSize = size + 10 * resonanceStrength;
+                        ellipse(0, 0, resonanceSize);
+                    }
+                }
+                
+                pop();
+            });
+        }
+        
+        function updateSystemInfo() {
+            frameCounter++;
+            if (millis() - lastFPSUpdate > 1000) {
+                document.getElementById('fpsDisplay').textContent = frameCounter;
+                frameCounter = 0;
+                lastFPSUpdate = millis();
+            }
+            
+            document.getElementById('oscDisplay').textContent = `${oscillators.length} (${tracers.length} tracers)`;
+            document.getElementById('modesDisplay').textContent = resonantModes.length;
+            
+            let totalEnergy = oscillators.reduce((sum, osc) => sum + osc.amplitude * osc.amplitude, 0);
+            let tracerEnergy = tracers.reduce((sum, tracer) => sum + (tracer.vx*tracer.vx + tracer.vy*tracer.vy), 0);
+            document.getElementById('energyDisplay').textContent = `${totalEnergy.toFixed(2)} + ${tracerEnergy.toFixed(2)}T`;
+        }
+        
+        function mousePressed() {
+            if (mouseX > 300) { // Avoid control panel
+                let worldX = mouseX - width/2;
+                let worldY = mouseY - height/2;
+                
+                // Add or move oscillator
+                let foundOsc = false;
+                oscillators.forEach(osc => {
+                    if (dist(worldX, worldY, osc.x - width/2, osc.y - height/2) < 30) {
+                        osc.x = worldX + width/2;
+                        osc.y = worldY + height/2;
+                        foundOsc = true;
+                    }
+                });
+                
+                if (!foundOsc && oscillators.length < 64) {
+                    oscillators.push({
+                        x: worldX + width/2,
+                        y: worldY + height/2,
+                        frequency: baseFreq + (noise(oscillators.length * 0.1) - 0.5) * freqSpread,
+                        phase: random(TWO_PI),
+                        amplitude: 1.0,
+                        connections: []
+                    });
+                    buildNetwork();
+                }
+            }
+        }
+        
+        function keyPressed() {
+            if (key === 'r' || key === 'R') resetSystem();
+            else if (key === ' ') isPaused = !isPaused;
+            else if (key === 'o' || key === 'O') showObjects = !showObjects;
+            else if (key === 't' || key === 'T') showTracers = !showTracers;
+            else if (key === 'c' || key === 'C') { oscillators = []; tracers = []; buildNetwork(); }
+            else if (key === 's' || key === 'S') saveFrame('wave-billiards-frame.png');
+        }
+        
+        function resetSystem() {
+            time = 0;
+            oscillators.forEach(osc => {
+                osc.phase = random(TWO_PI);
+                osc.amplitude = 1.0;
+            });
+            resonantModes.forEach(mode => {
+                mode.phase = random(TWO_PI);
+                mode.amplitude = exp(-0.05 * resonantModes.indexOf(mode));
+            });
+            // Reset tracers
+            tracers.forEach(tracer => {
+                tracer.age = 0;
+                tracer.phase = random(TWO_PI);
+                tracer.amplitude = 1.0;
+                tracer.trail = [];
+            });
+        }
+        
+        function pauseToggle() {
+            isPaused = !isPaused;
+        }
+        
+        function saveFrame() {
+            save('wave-billiards-' + year() + month() + day() + hour() + minute() + second() + '.png');
+        }
+        
+        function windowResized() {
+            resizeCanvas(windowWidth, windowHeight);
+            waveBuffer = createGraphics(width/2, height/2, WEBGL);
+            displayBuffer = createGraphics(width, height, WEBGL);
+            
+            if (img) {
+                let scale = min(width / img.width, height / img.height) * 0.8;
+                img.resize(img.width * scale, img.height * scale);
+                detectObjects();
+            }
+            createBilliardBoundary();
+        }
+    </script>
+</body>
+</html>

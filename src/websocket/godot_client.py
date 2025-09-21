@@ -51,7 +51,7 @@ class GodotWebSocketServer:
             await self.server.wait_closed()
         logger.info("WebSocket server stopped")
     
-    async def handle_client(self, websocket, path):
+    async def handle_client(self, websocket):
         """Handle new client connection"""
         client_address = websocket.remote_address
         logger.info(f"New client connected: {client_address}")

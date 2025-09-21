@@ -1,7 +1,7 @@
 # Avatar Mirror System Makefile
 # Requires uv: https://github.com/astral-sh/uv
 
-.PHONY: help install install-dev install-gpu install-cpu install-face-swap run test lint format clean setup-models setup-face-swap
+.PHONY: help install install-dev install-gpu install-cpu install-face-swap run test lint format clean setup-models setup-face-swap godot demo
 
 # Default target
 help:
@@ -17,6 +17,7 @@ help:
 	@echo ""
 	@echo "Development Commands:"
 	@echo "  run              Run the avatar mirror system"
+	@echo "  run-debug        Run with debug logging and visualization"
 	@echo "  test             Run tests"
 	@echo "  lint             Run linting (flake8, mypy)"
 	@echo "  format           Format code (black, isort)"
@@ -27,6 +28,10 @@ help:
 	@echo "  setup-face-swap  Setup Deep-Live-Cam face swapping (interactive)"
 	@echo "  setup-gpu        Setup for GPU acceleration" 
 	@echo "  setup-cpu        Setup for CPU-only development"
+	@echo ""
+	@echo "Godot Integration:"
+	@echo "  godot            Open Godot client project"
+	@echo "  demo             Run avatar mirror + open Godot demo"
 
 # Basic installation
 install:
@@ -160,6 +165,25 @@ quick-start-full:
 	@echo "🎉 Full system ready!"
 
 # Show system info
+# Godot integration
+godot:
+	@echo "🎮 Opening Godot client project..."
+	@if command -v godot >/dev/null 2>&1; then \
+		godot --path godot_client; \
+	else \
+		echo "❌ Godot not found in PATH"; \
+		echo "Please install Godot 4.3+ or open godot_client/ manually"; \
+		open godot_client; \
+	fi
+
+demo:
+	@echo "🎬 Starting Avatar Mirror demo..."
+	@echo "1. Starting Avatar Mirror System..."
+	$(MAKE) run &
+	@sleep 3
+	@echo "2. Opening Godot demo..."
+	$(MAKE) godot
+
 info:
 	@echo "Avatar Mirror System Information"
 	@echo "==============================="

@@ -99,7 +99,20 @@ uv pip install -e ".[face-swap,dev]"
 uv pip install -e ".[all]"
 ```
 
-3. **Optional: Setup Face Swapping**:
+3. **Setup AI Models**:
+```bash
+# Download all required AI models and repositories
+make setup-models
+
+# This automatically downloads:
+# - OpenCV face detection models  
+# - PIFuHD repository for 3D reconstruction
+# - UniRig repository for rigging
+# - TEMPO repository for pose estimation
+# - Deep-Live-Cam repository for face swapping
+```
+
+4. **Optional: Setup Face Swapping**:
 ```bash
 # Setup face swapping with uv
 make setup-face-swap
@@ -108,7 +121,7 @@ make setup-face-swap
 uv run python scripts/setup_face_swap.py --enable
 ```
 
-4. **Optional: Install Redis** (for better performance):
+5. **Optional: Install Redis** (for better performance):
 ```bash
 # On macOS
 brew install redis
@@ -182,6 +195,7 @@ python src/main.py
 **Available make commands**:
 ```bash
 make help              # Show all available commands
+make setup-models      # Download all AI models
 make run               # Run the system
 make run-debug         # Run with debug logging
 make test              # Run tests

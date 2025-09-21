@@ -27,6 +27,7 @@ try:
     from .websocket.godot_client import GodotIntegration
     from .cache.cache_manager import CacheManager
     from .face_swap.deep_live_cam_wrapper import FaceSwapPipeline
+    from .models.model_manager import ModelManager
     from .utils.config import config
 except ImportError:
     # Fallback to absolute imports (when run directly)
