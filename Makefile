@@ -48,7 +48,7 @@ install-gpu:
 # CPU-only installation (for development)
 install-cpu:
 	uv pip install -e ".[cpu,dev]"
-	uv pip install --index-url https://download.pytorch.org/whl/cpu torch torchvision --upgrade
+	uv pip install --index-url https://download.pytorch.org/whl/cpu "torch>=2.0.0,<2.6.0" "torchvision>=0.15.0,<0.20.0" --upgrade
 
 # Face swapping installation  
 install-face-swap:
@@ -65,13 +65,20 @@ setup-gpu: install-gpu
 
 setup-cpu: 
 	uv pip install -e ".[cpu,dev]"
-	uv pip install --index-url https://download.pytorch.org/whl/cpu torch torchvision --upgrade
+	uv pip install --index-url https://download.pytorch.org/whl/cpu "torch>=2.0.0,<2.6.0" "torchvision>=0.15.0,<0.20.0" --upgrade
 	@echo "✅ CPU-only setup complete"  
 	@echo "Run with: make run"
 
 # Model setup
 setup-models:
+	@echo "📦 Setting up AI models and repositories..."
 	uv run python scripts/setup_models.py
+	@echo "🔄 Downloading PIFuHD pre-trained weights..."
+	@if [ ! -f models/reconstruction/PIFuHD/checkpoints/pifuhd.pt ]; then \
+		cd models/reconstruction/PIFuHD && bash scripts/download_trained_model.sh; \
+	else \
+		echo "PIFuHD weights already exist"; \
+	fi
 	@echo "✅ All AI models setup complete"
 
 # Face swapping setup (interactive)
@@ -153,7 +160,7 @@ quick-start-cpu:
 	uv venv
 	@echo "Installing CPU-optimized dependencies..."
 	uv pip install -e ".[cpu,dev]"
-	uv pip install --index-url https://download.pytorch.org/whl/cpu torch torchvision --upgrade
+	uv pip install --index-url https://download.pytorch.org/whl/cpu "torch>=2.0.0,<2.6.0" "torchvision>=0.15.0,<0.20.0" --upgrade
 	@echo "🎉 Ready for CPU development!"
 	@echo "Activate with: source .venv/bin/activate"
 	@echo "Then run: make run"

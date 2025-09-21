@@ -40,12 +40,14 @@ class Configuration:
             'model_name': 'u2net_human_seg'
         },
         
-        # PIFuHD settings
+        # 3D Reconstruction settings
         'reconstruction': {
+            'method': 'monoport',  # 'pifuhd', 'monoport', or 'fast' 
             'device': 'auto',
             'resolution': 512,
             'generate_color': True,
             'pifuhd_path': None,
+            'monoport_path': None,
             'checkpoint_path': None
         },
         
@@ -56,12 +58,32 @@ class Configuration:
             'unirig_path': None
         },
         
-        # TEMPO settings
+        # Pose Estimation settings
         'pose_estimation': {
+            'method': 'lightweight',  # 'tempo', 'lightweight', or 'mediapipe'
             'device': 'auto',
             'tempo_path': None,
+            'lightweight_pose_path': None,
             'fps': 30,
             'smoothing_window': 5
+        },
+        
+        # Pose Prediction settings (siMLPe)
+        'pose_prediction': {
+            'enabled': True,
+            'device': 'auto',
+            'simlpe_path': None,
+            'prediction_horizon': 3,
+            'blend_factor': 0.3,
+            'confidence_threshold': 0.5,
+            
+            # Drift mode settings
+            'drift_enabled': True,
+            'drift_probability': 0.1,  # 10% chance per minute to start drifting
+            'drift_duration': 5.0,     # 5 seconds of drift
+            'drift_return_duration': 2.0,  # 2 seconds to return to human
+            'drift_prediction_strength': 0.8,  # How much to follow predictions during drift
+            'drift_cooldown': 30.0     # 30 seconds between drift episodes
         },
         
         # WebSocket settings

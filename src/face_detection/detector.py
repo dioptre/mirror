@@ -144,11 +144,11 @@ class UltraLightFaceDetector:
         required_body_height = h * 3  # Approximate body height
         available_space = height - (y + h)
         
-        if available_space < required_body_height * 0.6:  # Need at least 60% of estimated body
+        if available_space < required_body_height * 0.3:  # Need at least 30% of estimated body (lowered threshold)
             return False
         
-        # Face should not be too close to edges (arms likely cut off)
-        edge_margin = width * 0.1
+        # Face should not be too close to edges (arms likely cut off) - relaxed threshold
+        edge_margin = width * 0.05  # Reduced from 0.1 to 0.05
         if x < edge_margin or (x + w) > (width - edge_margin):
             return False
         

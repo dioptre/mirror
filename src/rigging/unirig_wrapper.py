@@ -35,6 +35,7 @@ class UniRigWrapper:
     def _find_unirig_installation(self) -> Optional[str]:
         """Try to find existing UniRig installation"""
         possible_paths = [
+            './models/rigging/UniRig',
             './UniRig',
             '../UniRig', 
             '../../UniRig',
@@ -43,7 +44,10 @@ class UniRigWrapper:
         ]
         
         for path in possible_paths:
-            if os.path.exists(os.path.join(path, 'unirig')):
+            # Check for any UniRig indicator files
+            if (os.path.exists(os.path.join(path, 'unirig')) or
+                os.path.exists(os.path.join(path, 'README.md')) or
+                os.path.exists(os.path.join(path, 'src'))):
                 logger.info(f"Found UniRig at {path}")
                 return path
         

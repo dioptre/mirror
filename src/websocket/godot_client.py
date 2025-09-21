@@ -390,6 +390,10 @@ class GodotIntegration:
         """Check if Godot clients are connected"""
         return self.communicator.get_client_count() > 0
     
+    def get_client_count(self) -> int:
+        """Get number of connected Godot clients"""
+        return self.communicator.get_client_count()
+    
     def get_status(self) -> Dict[str, Any]:
         """Get integration status"""
         return {

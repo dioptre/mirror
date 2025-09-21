@@ -128,7 +128,7 @@ class PersonTrackingSystem:
         self.face_cache_size = face_cache_size
         self.quality_assessor = QualityAssessor()
         self.disappear_threshold = 3.0  # seconds
-        self.confirmation_frames = 5  # frames needed to confirm person
+        self.confirmation_frames = 3  # frames needed to confirm person (reduced from 5)
         
     def update(self, image: np.ndarray, face_detections: List[Tuple[int, int, int, int, float]]) -> Dict[int, PersonData]:
         """
@@ -147,7 +147,7 @@ class PersonTrackingSystem:
         self._cleanup_disappeared_people(current_time)
         
         if not face_detections:
-            return self.people
+            return {person_id: person_data for person_id, person_data in self.people.items()}
         
         # Match detections to existing people
         matched_people, unmatched_detections = self._match_detections(
@@ -162,7 +162,7 @@ class PersonTrackingSystem:
         for detection in unmatched_detections:
             self._create_new_person(image, detection, current_time)
         
-        return self.people
+        return {person_id: person_data for person_id, person_data in self.people.items()}
     
     def _cleanup_disappeared_people(self, current_time: float):
         """Remove people who haven't been seen recently"""
@@ -258,7 +258,7 @@ class PersonTrackingSystem:
         # Confirm person after enough detections
         if not person.confirmed and len(person.face_history) >= self.confirmation_frames:
             person.confirmed = True
-            logger.info(f"Person {person_id} confirmed")
+            logger.info(f"🎯 Person {person_id} confirmed after {len(person.face_history)} frames")
         
         # Assess frame quality and update best frame if needed
         if person.confirmed:
