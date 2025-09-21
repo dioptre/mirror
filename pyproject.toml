@@ -1,0 +1,222 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "avatar-mirror"
+version = "1.0.0"
+description = "Real-time avatar mirror system using 3D reconstruction and pose estimation"
+authors = [
+    {name = "Avatar Mirror Team", email = "team@example.com"}
+]
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.8.1"
+keywords = ["avatar", "3d", "mirror", "pose-estimation", "face-detection"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Graphics :: 3D Modeling",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+    # Core dependencies
+    "opencv-python>=4.8.0",
+    "numpy>=1.21.0,<2.0.0",
+    "pillow>=8.3.0",
+    "scipy>=1.7.0",
+    "scikit-image>=0.19.0",
+    "matplotlib>=3.5.0",
+    
+    # PyTorch (will be overridden by optional deps)
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
+    
+    # 3D processing
+    "trimesh>=3.20.0",
+    "open3d>=0.16.0",
+    
+    # Pose estimation
+    "mediapipe>=0.10.0",
+    
+    # Background removal
+    "rembg>=2.0.50",
+    
+    # WebSocket communication  
+    "websockets>=11.0",
+    
+    # Caching and utilities
+    "redis>=4.5.0",
+    "requests>=2.28.0",
+    "pydantic>=2.0.0",
+    "tqdm>=4.64.0",
+    
+    # Standard library backports for older Python
+    "typing-extensions>=4.0.0;python_version<'3.10'",
+]
+
+[project.optional-dependencies]
+# GPU acceleration dependencies
+gpu = [
+    "onnxruntime-gpu>=1.15.0",
+]
+
+# CPU-only dependencies (for development) - PyTorch CPU will be installed separately
+cpu = [
+    "onnxruntime>=1.15.0",
+]
+
+# Face swapping dependencies
+face-swap = [
+    "insightface>=0.7.3",
+    "onnx>=1.14.0",
+    "onnxruntime>=1.15.0",
+]
+
+face-swap-gpu = [
+    "insightface>=0.7.3", 
+    "onnx>=1.14.0",
+    "onnxruntime-gpu>=1.15.0",
+]
+
+# Development dependencies
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+    "pre-commit>=3.0.0",
+]
+
+# All optional dependencies
+all = [
+    "avatar-mirror[gpu,face-swap-gpu,dev]"
+]
+
+[project.urls]
+Homepage = "https://github.com/your-username/avatar-mirror"
+Repository = "https://github.com/your-username/avatar-mirror"
+Issues = "https://github.com/your-username/avatar-mirror/issues"
+Documentation = "https://github.com/your-username/avatar-mirror#readme"
+
+[project.scripts]
+avatar-mirror = "src.main:main"
+avatar-mirror-setup = "scripts.setup_face_swap:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.setuptools.package-dir]
+"" = "."
+
+# Black configuration
+[tool.black]
+line-length = 88
+target-version = ['py38']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | PIFuHD
+  | UniRig
+  | Deep-Live-Cam
+  | tempo
+)/
+'''
+
+# isort configuration
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["src"]
+
+# MyPy configuration
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+disallow_untyped_decorators = false
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = [
+    "cv2.*",
+    "mediapipe.*",
+    "insightface.*", 
+    "trimesh.*",
+    "open3d.*",
+    "rembg.*",
+    "redis.*",
+]
+ignore_missing_imports = true
+
+# Pytest configuration
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config", 
+    "--verbose",
+    "--cov=src",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=xml",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "gpu: marks tests that require GPU",
+    "integration: marks tests as integration tests",
+]
+
+# Coverage configuration
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "*/tests/*",
+    "*/test_*", 
+    "*/setup.py",
+    "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]

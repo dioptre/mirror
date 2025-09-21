@@ -1,0 +1,7 @@
+# Development requirements for IDEs that don't support pyproject.toml yet
+# Install the project with: uv pip install -e ".[dev]"
+
+# This file is for compatibility only
+# Main dependencies are defined in pyproject.toml
+
+-e .[dev]

@@ -1,0 +1,3 @@
+[submodule "external/PosePredictor"]
+	path = external/PosePredictor
+	url = git@github.com:dioptre/PosePredictor.git

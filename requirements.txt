@@ -1,0 +1,53 @@
+# Core dependencies
+opencv-python>=4.8.0
+numpy>=1.21.0
+torch>=2.0.0
+torchvision>=0.15.0
+pillow>=8.3.0
+
+# CPU-only PyTorch (uncomment for CPU-only development)
+# --index-url https://download.pytorch.org/whl/cpu
+# torch>=2.0.0+cpu
+# torchvision>=0.15.0+cpu
+
+# Face detection
+ultralight-face-detection
+
+# Background removal
+backgroundremover
+rembg
+
+# 3D reconstruction (PIFuHD dependencies)
+trimesh
+scipy
+scikit-image
+matplotlib
+
+# Rigging (UniRig dependencies)
+open3d
+
+# Pose estimation (TEMPO dependencies)
+mediapipe
+
+# WebSocket communication
+websockets
+asyncio-mqtt
+
+# Caching and utilities
+redis
+pickle
+json
+datetime
+threading
+queue
+logging
+
+# Deep-Live-Cam dependencies (optional face swapping)
+insightface>=0.7.3
+onnx>=1.14.0
+onnxruntime>=1.15.0
+# onnxruntime-gpu>=1.15.0  # for GPU acceleration
+
+# Optional GPU acceleration
+# torch-audio  # if needed for TEMPO
+# torchtext    # if needed for TEMPO
